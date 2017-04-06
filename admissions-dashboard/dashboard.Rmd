@@ -1,0 +1,144 @@
+---
+title: "Education Analytics Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+#setwd("/home/walling/dev/TERC-Crews/CollAppProto")
+library(flexdashboard)
+library(ggplot2)
+library(gridExtra)
+options(useHTTPS=FALSE)
+#source("/home/walling/dev/TERC-Crews/CollAppProto/simulated_data.R")
+load(file="model_reduced.Rdata")
+model = model_reduced
+source("simulated_data.R")
+#load(file="model.Rdata")
+```
+
+Admissions Calculator
+=============================
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+This tool allows you to explore the impact of your high school performance on the probability of being
+admitted to a Texas public university.
+
+
+```{r, eval=T}
+selectInput("gradtype_fct", label = "GradType",
+            choices=levels(gradtype_fct), selected = 'low')
+
+sliderInput("gpa", label = "HS GPA",
+            min = 0.0, max = 4.0, value = 3.0, step = 0.1)
+
+sliderInput("act", label = "ACT Score",
+            min = 10, max = 36, value = 23, step = 1)
+
+sliderInput("num_adv_courses", label = "# of AP Course",
+            min = 0, max = 10, value = 3, step = 1)
+
+sliderInput("num_dual_credit", label = "# of Dual Credit Courses",
+            min = 0, max = 10, value = 2, step = 1)
+
+checkboxGroupInput("schools", label='Schools',
+            choices=sort(levels(school_fct)), selected=c('The University of Texas at Austin', 'Texas Tech University'))
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Output
+
+```{r, eval=T}
+renderPlot({
+    # Will create a prediction for each selected school
+    selected_schools <- input$schools
+    pred_data <- data.frame(school_fct=selected_schools,
+                            gradtype_fct=input$gradtype_fct,
+                            num_adv_courses=input$num_adv_courses,
+                            num_dual_credit=input$num_dual_credit,
+                            gpa=input$gpa,
+                            act=input$act)
+    predictions <- predict(model, newdata=pred_data, type='response')
+    
+    # TODO: Replace with more interesting plot, ex. ggplot2
+    #plot(predictions)
+    ggplot(pred_data, aes(x=school_fct, y=predictions)) +
+      geom_bar(stat="identity", aes(fill=school_fct)) +
+      ylim(0,1)
+  })
+```
+
+Admissions Summary
+==================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+This tool provides admissions statistics for Texas public universities.
+
+```{r}
+checkboxGroupInput("admission_schools", label='Schools',
+            choices=as.character(college_fct), selected=c('UT Austin', 'Texas Tech'))
+
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Admissions Information
+
+```{r}
+renderPlot({
+  
+  # Plot 1 = Admissions by Grad Type
+  plot_data <- reg_data[reg_data$school==input$admission_schools,]
+  plot1 <- qplot(factor(hs_grad_type), data=plot_data, geom="bar", fill=factor(accepted), xlab='HS Grad Type')
+  
+  # Plot 2 = Admissions by Grad Type and College
+  plot_data <- reg_data[reg_data$school==input$admission_schools & reg_data$accepted==1,]
+  plot2 <- qplot(factor(hs_grad_type), data=plot_data, geom="bar", fill=factor(school), xlab='HS Grad Type')
+  
+  grid.arrange(plot1, plot2, nrow=2, ncol=1)
+})
+```
+
+Cohort Analysis
+==================================
+
+```{r, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+#load(file="/home/walling/dev/TERC-Crews/CollAppProto/school.Rdata")
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+This tool provides information on college and career progressions for a selected cohort of Texas high school graduates.
+
+```{r}
+selectInput("race", label = "Race:",
+            choices = as.character(race_fct), selected = c('White', 'Asian'))
+
+```
+
+Column
+-----------------------------------------------------------------------
+
+### 6-year Forecast
+
+```{r}
+renderPlot({
+  library(reshape2)
+  plot_data <- melt(cohort_data[cohort_data$race==input$race,], measure.vars = c('year1', 'year2', 'year3', 'year4', 'year5', 'year6'), variable.name='year')
+  plot_data$status <- ordered(plot_data$value, levels=c('un-enrolled', 'dropout', 'enrolled', 'graduated'))
+  qplot(year, data=plot_data, geom="bar", fill=status)
+  
+})
+```
+
