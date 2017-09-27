@@ -9,7 +9,7 @@ runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-setwd("/home/walling/dev/git/oncourse/admissions-dashboard")
+#setwd("/home/walling/dev/git/oncourse/admissions-dashboard")
 library(flexdashboard)
 library(ggplot2)
 library(gridExtra)
@@ -19,15 +19,6 @@ model = model_reduced
 #source("simulated_data.R")
 #load(file="model.Rdata")
 ```
-
-Introduction
-=============================
-
-Welcome to the Admissions Explorer Tool!!!
-
-Here we blah blah blah
-
-
 
 Admissions Explorer
 =============================
@@ -40,7 +31,7 @@ admitted to a Texas public university.
 
 ```{r, eval=T}
 
-# Reset lables of grad type
+# Reset lables of grad type for display, actual values/levels must still match what was used in creating the models.
 gradtype_levels = levels(gradtype_fct)
 gradtype_choices = c("Minimum/IEP"=gradtype_levels[1], "Recommended"=gradtype_levels[2], "Distinguished"=gradtype_levels[3])
 
@@ -49,6 +40,8 @@ selectInput("gradtype_fct", label = "HS Graduation Type",
 
 sliderInput("gpa", label = "HS GPA",
             min = 0.0, max = 4.0, value = 3.0, step = 0.1)
+
+'Here is a link'
 
 sliderInput("act", label = "ACT Score",
             min = 10, max = 36, value = 23, step = 1)
@@ -87,12 +80,3 @@ renderPlot({
       ylim(0,1)
   })
 ```
-
-Additional Resources
-=============================
-
-Here we can provide additional resources such as:
-
-* Links to AP course help
-* Links to local community college course catalogs
-* Blah blah
