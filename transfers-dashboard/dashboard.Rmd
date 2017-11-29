@@ -1,0 +1,119 @@
+---
+title: "School Transfers Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+#setwd("/home/walling/dev/git/oncourse/transfers-dashboard")
+library(flexdashboard)
+library(mapdata)
+library(ggplot2)
+library(grid)
+library()
+options(useHTTPS=FALSE)
+load(file="data.Rdata")
+```
+
+Receiving Map
+=============================
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+Select a school to see transfers received.
+
+
+```{r, eval=T}
+
+# Reset lables of grad type for display, actual values/levels must still match what was used in creating the models.
+
+sliderInput("receiving_amount", label = "Min Amount",
+            min = 1, max = 500, value = 20, step = 10)
+
+receiving_schools = unique(data[data$value > 0,]$receiving_name)
+checkboxGroupInput("receiving_schools", label='Receiving Schools',
+            choices=sort(receiving_schools), selected=c('The University of Texas at Austin'))
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Output
+
+```{r, eval=T}
+renderPlot({
+    # Will create a prediction for each selected school
+    selected_schools <- input$receiving_schools
+    min_amount = input$receiving_amount
+    plot_data <- data[data$receiving_name %in% selected_schools & data$value >= min_amount,]
+    
+    states <- map_data("state")
+    tx_df <- subset(states, region == "texas")
+    counties <- map_data("county")
+    tx_county <- subset(counties, region == "texas")
+    
+    # TODO: Replace with more interesting plot, ex. ggplot2
+    #plot(predictions)
+    ggplot(data = tx_df) + 
+      geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "black") + 
+      geom_polygon(aes(x = long, y = lat, group = group), data = tx_county, fill = NA, color = "black") +
+      coord_fixed(1) + 
+      geom_segment(aes(x=a_long, y=a_lat, xend=b_long, yend=b_lat, size=value, color=giving_name), 
+                   data=plot_data, 
+                   arrow=arrow(length=unit(0.1,"cm"), ends='last', type='closed'))
+
+  })
+```
+
+Giving Map
+=============================
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+Select a school to see transfers given.
+
+```{r, eval=T}
+
+# Reset lables of grad type for display, actual values/levels must still match what was used in creating the models.
+
+sliderInput("giving_amount", label = "Min Amount",
+            min = 1, max = 500, value = 20, step = 10)
+
+giving_schools = unique(data[data$value > 0,]$giving_name)
+checkboxGroupInput("giving_schools", label='Giving Schools',
+            choices=sort(giving_schools), selected=c('The University of Texas at Austin'))
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Output
+
+```{r, eval=T}
+renderPlot({
+    # Will create a prediction for each selected school
+    selected_schools <- input$giving_schools
+    min_amount = input$giving_amount
+    plot_data <- data[data$giving_name %in% selected_schools & data$value >= min_amount,]
+    
+    states <- map_data("state")
+    tx_df <- subset(states, region == "texas")
+    counties <- map_data("county")
+    tx_county <- subset(counties, region == "texas")
+    
+    # TODO: Replace with more interesting plot, ex. ggplot2
+    #plot(predictions)
+    ggplot(data = tx_df) + 
+      geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "black") + 
+      geom_polygon(aes(x = long, y = lat, group = group), data = tx_county, fill = NA, color = "black") +
+      coord_fixed(1) + 
+      geom_segment(aes(x=a_long, y=a_lat, xend=b_long, yend=b_lat, size=value, color=receiving_name), 
+                   data=plot_data, 
+                   arrow=arrow(length=unit(0.1,"cm"), ends='first', type='closed'))
+
+  })
+```

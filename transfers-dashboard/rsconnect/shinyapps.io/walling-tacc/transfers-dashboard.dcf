@@ -1,0 +1,10 @@
+name: transfers-dashboard
+title:
+username:
+account: walling-tacc
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 241875
+bundleId: 1105013
+url: https://walling-tacc.shinyapps.io/transfers-dashboard/
+when: 1511989658.8711
