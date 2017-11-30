@@ -77,8 +77,8 @@ nodes = data.coords
 m = format_transfers()
 edges = cbind(expand.grid(dimnames(m)), value = as.vector(m))
 
-data =  sqldf("select e.giving, fa.Institution as giving_name, a.lat as a_lat, -1*a.long as a_long, 
-              e.receiving, fb.Institution as receiving_name,  b.lat as b_lat, -1*b.long as b_long, e.value
+data =  sqldf("select e.giving as outgoing_fice, fa.Institution as outgoing_name, a.lat as a_lat, -1*a.long as a_long, 
+              e.receiving as incoming_fice, fb.Institution as incoming_name,  b.lat as b_lat, -1*b.long as b_long, e.value
               from edges e
               join nodes a on e.giving=a.fice
               join fices fa on fa.FICE=a.fice

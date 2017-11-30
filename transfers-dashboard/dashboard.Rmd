@@ -14,29 +14,27 @@ library(flexdashboard)
 library(mapdata)
 library(ggplot2)
 library(grid)
+library(plotly)
 library()
 options(useHTTPS=FALSE)
 load(file="data.Rdata")
 ```
 
-Receiving Map
+Incoming Students Map
 =============================
 Column {.sidebar}
 -----------------------------------------------------------------------
 
-Select a school to see transfers received.
+Select a school to see incoming student transfers.
 
 
 ```{r, eval=T}
-
-# Reset lables of grad type for display, actual values/levels must still match what was used in creating the models.
-
-sliderInput("receiving_amount", label = "Min Amount",
+sliderInput("incoming_amount", label = "Min Amount",
             min = 1, max = 500, value = 20, step = 10)
 
-receiving_schools = unique(data[data$value > 0,]$receiving_name)
-checkboxGroupInput("receiving_schools", label='Receiving Schools',
-            choices=sort(receiving_schools), selected=c('The University of Texas at Austin'))
+incoming_schools = unique(data[data$value > 0,]$incoming_name)
+checkboxGroupInput("incoming_schools", label='Incoming Schools',
+            choices=sort(incoming_schools), selected=c('The University of Texas at Austin'))
 ```
 
 Column
@@ -45,47 +43,44 @@ Column
 ### Output
 
 ```{r, eval=T}
-renderPlot({
-    # Will create a prediction for each selected school
-    selected_schools <- input$receiving_schools
-    min_amount = input$receiving_amount
-    plot_data <- data[data$receiving_name %in% selected_schools & data$value >= min_amount,]
+renderPlotly({
+    selected_schools <- input$incoming_schools
+    min_amount = input$incoming_amount
+    
+    plot_data <- data[data$incoming_name %in% selected_schools & data$value >= min_amount,]
     
     states <- map_data("state")
     tx_df <- subset(states, region == "texas")
     counties <- map_data("county")
     tx_county <- subset(counties, region == "texas")
     
-    # TODO: Replace with more interesting plot, ex. ggplot2
-    #plot(predictions)
     ggplot(data = tx_df) + 
       geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "black") + 
       geom_polygon(aes(x = long, y = lat, group = group), data = tx_county, fill = NA, color = "black") +
       coord_fixed(1) + 
-      geom_segment(aes(x=a_long, y=a_lat, xend=b_long, yend=b_lat, size=value, color=giving_name), 
+      geom_segment(aes(x=a_long, y=a_lat, xend=b_long, yend=b_lat, size=value, color=outgoing_name), 
                    data=plot_data, 
-                   arrow=arrow(length=unit(0.1,"cm"), ends='last', type='closed'))
+                   arrow=arrow(length=unit(0.1,"cm"), ends='last', type='closed')) + 
+      geom_point(aes(x=a_long, y=a_lat, color=outgoing_name, destination=incoming_name, students=value), data=plot_data)
 
   })
 ```
 
-Giving Map
+Outgoing Students Map
 =============================
 Column {.sidebar}
 -----------------------------------------------------------------------
 
-Select a school to see transfers given.
+Select a school to see outgoing student transfers.
 
 ```{r, eval=T}
 
-# Reset lables of grad type for display, actual values/levels must still match what was used in creating the models.
-
-sliderInput("giving_amount", label = "Min Amount",
+sliderInput("outgoing_amount", label = "Min Amount",
             min = 1, max = 500, value = 20, step = 10)
 
-giving_schools = unique(data[data$value > 0,]$giving_name)
-checkboxGroupInput("giving_schools", label='Giving Schools',
-            choices=sort(giving_schools), selected=c('The University of Texas at Austin'))
+outgoing_schools = unique(data[data$value > 0,]$outgoing_name)
+checkboxGroupInput("outgoing_schools", label='Outgoing Schools',
+            choices=sort(outgoing_schools), selected=c('The University of Texas at Austin'))
 ```
 
 Column
@@ -94,11 +89,11 @@ Column
 ### Output
 
 ```{r, eval=T}
-renderPlot({
-    # Will create a prediction for each selected school
-    selected_schools <- input$giving_schools
-    min_amount = input$giving_amount
-    plot_data <- data[data$giving_name %in% selected_schools & data$value >= min_amount,]
+renderPlotly({
+    selected_schools <- input$outgoing_schools
+    min_amount = input$outgoing_amount
+    
+    plot_data <- data[data$outgoing_name %in% selected_schools & data$value >= min_amount,]
     
     states <- map_data("state")
     tx_df <- subset(states, region == "texas")
@@ -111,9 +106,10 @@ renderPlot({
       geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "black") + 
       geom_polygon(aes(x = long, y = lat, group = group), data = tx_county, fill = NA, color = "black") +
       coord_fixed(1) + 
-      geom_segment(aes(x=a_long, y=a_lat, xend=b_long, yend=b_lat, size=value, color=receiving_name), 
+      geom_segment(aes(x=a_long, y=a_lat, xend=b_long, yend=b_lat, size=value, color=incoming_name, label=incoming_name), 
                    data=plot_data, 
-                   arrow=arrow(length=unit(0.1,"cm"), ends='first', type='closed'))
+                   arrow=arrow(length=unit(0.1,"cm"), ends='first', type='closed')) +
+      geom_point(aes(x=b_long, y=b_lat, color=incoming_name, source=outgoing_name, students=value), data=plot_data)
 
   })
 ```
